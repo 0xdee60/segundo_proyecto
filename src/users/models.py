@@ -28,10 +28,23 @@ class Website(models.Model):
         else:
             return "No fue publicado en la fecha actual"
 
+    #se llama sin parentesis
     @property
     def get_nombre_y_calificacion(self):
         resultado:str = f"Nombre: {self.nombre} \nCalificacion: {str(self.calificacion)} "
         return resultado
+
+    
+    def __str__(self) -> str:
+        return self.nombre
+
+    
+    def save(self,*args, **kwargs):
+        print('Se guardo el objeto')
+        return super().save(*args,**kwargs)
+
+    
+
 
 class Auto(models.Model):
     nombre = models.CharField(max_length=50, primary_key=True)

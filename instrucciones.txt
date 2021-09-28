@@ -1,0 +1,339 @@
+#creacion y activacion de entorno virtual
+pip install virtualenv
+virtualenv env
+cd env
+cd Scripts
+activate
+
+
+#crear requirements.txt y lo que usara
+django==3.2.6
+
+
+#instalar requirements.txt
+pip install -r requerimients.txt
+
+
+#crear proyecto core(primera app informacion de
+#nuestro proyecto)
+django-admin startproject core .
+
+
+#crear aplicacion dentro de nuestro proyecto
+python .\manage.py startapp users
+
+
+#incluir aplicacion en settings.py de core
+
+
+#modelos se crean en models.py
+#como clases
+class Usuario(models.Model):
+    nombres = models.CharField(max_length=100)
+    apellidos = models.CharField(max_length=100)
+ESTADO_VALORES=(
+    ('R', 'Reviewed'),
+    ('N', 'Not Reviewed'),
+    ('E', 'Error'),
+    ('A', 'Accepted')
+) #para guardar el estado en un solo caracter y obtener
+#su valor mediante el metodo get_estado_display()
+class Website(models.Model):
+    nombre = models.CharField(max_length=250)
+    url = models.URLField()
+    fecha_publicacion = models.DateField()
+    calificacion = models.IntegerField()
+    estado = models.CharField(choices=ESTADO_VALORES, max_length=1) #choises para que haga uso de la tupla
+    administrador = models.ForeignKey(Usuario, on_delete=models.CASCADE) #para que borre en cascada
+
+
+#migrar modelos
+python manage.py makemigrations
+python manage.py migrate
+
+
+#acceder a consola python del proyecto
+python manage.py shell 
+
+
+#indicar clave primaria en el modelo
+#las pk solo se pueden leer no editar
+class Auto(models.Model):
+    nombre = models.CharField(max_length=50, primary_key=True)
+
+
+#indicar que un campo del modelo es unico
+    url = models.URLField(unique=True)
+
+
+#Indicar campos vervose e indicar cardinalidad
+class Usuario(models.Model):
+    nombres = models.CharField("los nombres del usuario",max_length=100)
+    apellidos = models.CharField("los apellidos del usuario",max_length=100)
+    autos = models.ManyToManyField('Auto', verbose_name="los carros del usuario") #muchos a muchos
+
+ administrador = models.ForeignKey(Usuario, on_delete=models.CASCADE) #uno a uno
+
+
+#agregar un auto a usuario
+ auto = Auto.objects.get('Audi')
+ u = Usuario.first()
+ u.autos.add(auto)
+ u.save()
+
+
+#Meta opciones: sirven para cualquier cosa que no sea un campo
+#por ejemplo el orden, etc
+class Meta:
+    ordering = ['calificacion']
+    db_table = 'website_custom_table_name' #curstomisar nombre
+    verbose_name = "la pagina web" #customisar verbose singular
+    verbose_name_plural = 'las paginas' #verbose plural 
+
+
+#funciones dentro de los modelos siempre se le pasa self
+def post_de_esta_semana(self):
+    if self.fecha_publicacion < datetime.date(2020,6,6)
+        return "Se publico despues de la semana indicada"
+    else:
+        return "Publicado esta semana"
+#se llama sin aprentesis ej: w.get_nombre_completo
+@property #se usa para llamar una func sin colocar los parametros
+def get_nombre_completo(self):
+    return "{} {}".format(self.nombres,self.apellidos)
+
+
+#crear objetos de un modelo otra forma
+variable = Modelo.objects.create(campo='123',campo2='1233')#ya no se usa save()
+
+
+#filtrar objetos de un modelo por un campo 
+var = Modelo.objects.filter(campo1='123')
+var = Modelo.objects.filter(fecha__year=2020) #filtrar solo por anio
+var = Modelo.objects.filter(fecha__month=2) #filtrar solo por mes
+var = Modelo.objects.filter(calificacion__gte=5) #filtrar mayor igual que 5
+var = Modelo.objects.filter(calificacion__lte=5) #filtrar solo menor que 5
+
+
+#encadenar filtros
+var = Modelo.objects.filter(nombre__startswhit('new').exclude(fecha__year=2008).filter(calificacion=7)
+#filtrar que su nombre comienze por 'new', excluiendo anio de 2008, ademas filtrar solo calificados de 7
+
+
+#buscar objetos en especifico
+e = Modelo.objects.first() #obtener el primero
+e = Modelo.objects.all()[:10] #obtener los primeros 10 no hay slicing negativo
+
+
+#case sensitive lookup
+e = Modelo.objects.filter(nombre__exact='miguel') #obtiene objetos que tengan el nombre exacto de 'miguel'
+e = Modelo.objects.filter(nombre__iexact='MigUel') #obtiene objetos que tengan las sintaxis sin iportar mayusculas o min
+e = Modelo.objects.filter(nombre__contains='mig') #obtiene objetos que contengan la sintaxis en su nombre
+e = Modelo.objects.filter(nombre__icontains='mig') #obtiene objetos que contengan la sintaxis en su nombre sin importar mayusculas
+e = Modelo.objects.filter(nombre__istartswith='mig') #obtiene objetos que empiece con la sintaxis en su nombre
+e = Modelo.objects.filter(nombre__iendswith='mig') #obtiene objetos que finalice con la sintaxis en su nombre
+
+
+#span looksup (entre tablas relacionadas)
+e = Modelo.objects.filer(campoentidad__campo='another') #tiene el campoentidad que es de otra tabla y su campo
+Modelo.objects(entrada__titulo='some')
+Modelo.objects(entrada__autor__nombre='miguel')
+
+
+#Caching evitar consumos infeciente de memoria
+#guardar en variable y trabajar con esa
+querryset = Modelo.objects.all()
+print([e.titulo for e in querryset])
+
+
+#Q lookups
+#importar libreria
+from django.db.models import Q
+Modelo.objects.filter(Q(fecha__year=2020) | Q(fecha__year=2019) , Q(calificacion=7))
+#filtrar cuando el anio sea 2020 o 2019 y su calificacion sea 7
+
+
+#urls
+#debemos configurar el campo ROOT_URLCONF de settings.py de
+#nuestro proyecto donde se indicara la configuracion general 
+#o root de los urls
+#Agregar urls de nueva aplicacion
+path('users/', include('users.urls',namespace='users')),
+
+
+#configurar pagina 404
+#en core urls.py
+handler404 = 'users.views.clase_404_view'
+#en la ruta de users.views definimos la clase 404
+def clase_404_view(request, exception):
+    return HttpResponseNotFound('Pagina no encontrada - 404')
+
+
+#vista cargada de html
+#definimos view class en views.py
+def entry_list(request):
+    context = {
+    
+    }
+    return render(request, "nombresubcarpeta/template_nombre.html",context)
+#definimos el url en utls.py de nuestra app ya indexada
+path('',entry_list,name='entry-list')
+#crear carpeta template con los html dentro de carpeta de tu app
+#y sub carpeta dentro de esta con el nombre de tu app
+#crear archivo html en subcarpeta
+
+
+#redirigir 
+def redirect_back_home(request):
+    return redirect('/namespaceoapp:namedefinidoenpath',parametrosencasonesesario=1)
+
+
+
+#vistas basadas en clases
+#importar View
+from django.views import View
+class MyClassView(View):
+	def get(self, request):
+		print('correr codigo')
+		return HttpResponse('Response from class')
+
+#agregar a urls.py de nuestra app
+from .views import MyClassView
+#agregamos el path
+path('MyClassView/',MyClassViewas_view(),name='myclassview')
+
+
+#Crear vistas basadas en vistas genericas
+#importar vistas genericas segun la nesesidad
+from django.views.generic import ListView, DeleteView, ...
+#importar modelo que usaremos
+from .models import Modelo
+#crear clase en views.py
+class MyListView(ListView):
+	model = Modelo
+#agregar a urls.py
+#importar clase creada
+#agregar path
+#crear template para la clase
+
+
+#trabajar con una solacarpeta de templates
+#crear carpeta templates a nivel de la carpeta de nuestro proy
+#en settings.py de nuestro proyecto modificar en TEMPLATES
+# el campo DIRS
+ 'DIRS': [os.path.join(BASE_DIR, 'nombredirtemplates')],
+
+
+#sintaxis de templates
+#todo codigo python va dentro de {% aqui %}
+#para acceder a variables se usar {{asi}}
+#para filtrar contenido de usa |
+{% for post in post_list %}
+	<li> {{post.titulo|title}} </li>
+	<span> {{post.fecha|date:"Y-m-d"}} </span>
+	<span> {{post.fecha|timesince}} ago </span> #hace cuanto tiempo fue publicado
+{% endfor %}
+#modulo humanize
+#agregamos el modulo en INSTALLED_APPS de settings.py de nuestro proyecto
+#antes de nuestra app
+'django.contrib.humanize',
+#filtros: 
+<span> {{post.calificacion|apnumber}} </span> #convierte numero a texto
+{# este es un comentario #}
+<span> {{curso.precio|incomma}} </span> #da formato ej 4500 a 4,500
+<span> {{cuenta.total|intword}} </span> #1000000 -> 1 millon
+<span> {{post.fecha|naturalday}} </span> #convierte fecha en today, yesterday, ,etc
+<span> {{post.fecha|naturaltime}} </span> #convierte a tiempo restante 4 minutes, 10 seconds ago
+<span> {{post.id|ordinal}} </span> #convierte 1 a primero, etc
+
+
+#formularios
+#libreria pillow nos permite trabajar con imagenes
+#instalar de ser necesario
+#agregamos la clase a urls.py de nuestra app
+from .views import post_create
+#agregamos el path
+path('create/', post_create, name='entry-create'),
+#creamos un archivo forms.py donde definiremos 
+#los campos
+from django import forms
+from .models import Modelo
+class ModeloForm(forms.Form):
+	campo1 = forms.CharField(label='ingrese el nombre', max_lenght=100)
+	campo2 = forms.ChardField(widget=forms.Textarea) 
+class ModeloModelForm(forms.ModelForm):
+	class Meta:
+		model = Modelo
+		fields = "__all__"
+#creamos nuestro html en templates (form.html)
+<form method=...>
+	{% csrf_token %} #este token siempre va evita hackeos por formularios
+	{{form.as_p}} #crea un formulario segun el modelo
+	<button type='submit'>guardar</button>
+</form>
+#creamos una nueva vista en clase (views.py)
+def post_create(request):
+	#llamamos al formulario definido en el siguietne punto
+	form = ModeloForm(request.POST or None)
+	if form.is_valid():
+		nombre = form.cleaned_data.get('nombre')
+		titulo = form.cleaned_data.get('titulo')
+		modelo = Modelo(nombre=nombre, titulo=titulo)
+		modelo.save()
+		return redirect('namespace:entry-list')
+	context = {
+		'form':form
+	}
+	return render(request, "form.html", context)
+#otra forma de crear una nueva vista de clase(views.py)
+def post_create(request):
+	#llamamos al formulario definido en la clase ModeloModelForm (con Meta)
+	form = ModeloModelForm(request.POST or None)
+	if form.is_valid():
+		form.save()
+		return redirect('namespace:entry-list')
+	context = {
+		'form':form
+	}
+	return render(request, "form.html", context)
+
+
+#para trabajar con imagenes tenemos que importar Pillow
+#en requirements.txt
+#Agregar en settings.py de nuestro proy al final
+#crear carpeta static para que las img se carguen
+#al nivel de templates
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR,'static_root')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media_root')
+#agregar en urls.py de nuestro proy
+if settings.DEBUG:
+	urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+	urlpatterns += static(settings.STATIC_URL,document_root=settings.STATIC_ROOT)
+#si vas a usarlo en adm tambien agregar en admin.py
+#de tu app
+from .models import Blog, Author, Entry #(entidades)
+admin.site.register(Blog)
+admin.site.register(Author)
+admin.site.register(Entry)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
